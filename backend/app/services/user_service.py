@@ -1,4 +1,4 @@
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 from app.schemas.user import UserCreate, User
 from app.services.base_service import BaseService
 

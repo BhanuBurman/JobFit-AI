@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from app.schemas.query import QueryRequest, QueryResponse
-from app.services.service_factory import ServiceFactory
+from app.services.llm_service import OPENAIService
 
 router = APIRouter()
 
@@ -8,8 +8,8 @@ router = APIRouter()
 async def query(request: QueryRequest):
     """Handle query requests"""
     try:
-        # Get the QueryService instance from the factory
-        llm_service = ServiceFactory.get_service("llm")
+        # Instantiate the LLM service directly (no factory)
+        llm_service = OPENAIService()
         
         # Use the service to process the query
         result = await llm_service.generate_response(request.query, request.id)

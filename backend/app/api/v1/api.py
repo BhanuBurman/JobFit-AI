@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from .endpoints import health, query, users, search, items
+from .endpoints import health, query, users, search, resume_review, upload
 
 api_router = APIRouter()
 
@@ -8,4 +8,5 @@ api_router.include_router(health.router, tags=["health"])
 api_router.include_router(query.router, tags=["query"])
 api_router.include_router(users.router, tags=["users"])
 api_router.include_router(search.router, tags=["search"])
-api_router.include_router(items.router, tags=["items"]) 
+api_router.include_router(resume_review.router, tags=["resume"])
+api_router.include_router(upload.router, tags=["upload"])

@@ -32,6 +32,10 @@ jobfit/
 .env.test.local
 .env.production.local
 
+# Temp files
+uploads/
+vector_db/
+
 # IDE and Editor files
 .vscode/
 .idea/
