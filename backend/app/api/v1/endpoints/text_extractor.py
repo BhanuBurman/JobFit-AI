@@ -1,19 +1,19 @@
 from fastapi import APIRouter, UploadFile, File, HTTPException
-from app.schemas.api import FileUplaodAPIResponse
-from app.services.file_upload_service import FileUploadService
+from app.schemas.api import PDFExtractionAPIResponse, PDFExtractionAPIRequest
+from app.services.pdf_extraction_service import PDFExtractionService
 
 router = APIRouter()
 
-service = FileUploadService()
+service = PDFExtractionService()
 
-@router.post("/upload/pdf", response_model=FileUplaodAPIResponse)
-async def upload_pdf(file: UploadFile = File(...)):
+@router.post("/extract/pdf", response_model=PDFExtractionAPIResponse)
+async def extract_pdf(file_path: PDFExtractionAPIRequest):
     try:
-        result = await service.process(file)
+        result = await service.process(file_path.file_path)
         
         if not result.get("success"):
             raise HTTPException(status_code=400, detail=result.get("message", "Invalid file"))
-
+        
         return result
     except HTTPException:
         raise

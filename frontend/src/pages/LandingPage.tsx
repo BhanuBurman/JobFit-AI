@@ -1,24 +1,69 @@
 import React, { useState } from 'react';
-import { Button } from './ui/button';
-import { Card, CardContent } from './ui/card';
-import { Textarea } from './ui/textarea';
+import { Button } from '../components/ui/button';
+import { Card, CardContent } from '../components/ui/card';
+import { Textarea } from '../components/ui/textarea';
 import { Upload, TrendingUp, Target, Users } from 'lucide-react';
+import api from '../lib/api';
 
 export function LandingPage() {
   const [resumeText, setResumeText] = useState('');
   const [isDragOver, setIsDragOver] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadedFileInfo, setUploadedFileInfo] = useState({});
+  const [error, setError] = useState<string | null>(null); // Add error state
 
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const content = e.target?.result as string;
-        setResumeText(content);
-      };
-      reader.readAsText(file);
+  const UPLOAD_ENDPOINT = "/api/v1/upload/pdf";
+  const EXTRACT_ENDPOINT = "/api/v1/extract/pdf";
+
+  const uploadFile = async (file: File) => {
+    setIsUploading(true);
+    setError(null); // Add error state
+    
+    try {
+      console.log("Starting upload for file:", file.name);
+      
+      const formData = new FormData();
+      formData.append("file", file);
+      
+      const uploadResponse = await api.post(UPLOAD_ENDPOINT, formData);
+      console.log("Upload successful:", uploadResponse.data);
+      
+      setUploadedFileInfo(uploadResponse.data.data);
+      
+      // Check if path exists before extracting
+      if (!uploadResponse.data.data?.path) {
+        throw new Error("No file path received from upload");
+      }
+      
+      console.log("Starting text extraction...");
+      const extractResponse = await api.post(EXTRACT_ENDPOINT, {
+        file_path: uploadResponse.data.data.path
+      });
+      
+      console.log("Extraction successful:", extractResponse.data);
+      setResumeText(extractResponse.data.data.full_text);
+      
+    } catch (error: any) {
+      console.error("Upload/Extract error:", error);
+      
+      if (error.response?.status === 422) {
+        console.error("Validation error details:", error.response.data);
+        setError("Invalid file format or data. Please try again.");
+      } else if (error.response?.status === 500) {
+        setError("Server error. Please try again later.");
+      } else {
+        setError(error.message || "An error occurred during upload.");
+      }
+    } finally {
+      setIsUploading(false);
     }
   };
+
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) =>{
+    uploadFile(e.target.files?.[0] as File);
+  }
+
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -35,15 +80,11 @@ export function LandingPage() {
     setIsDragOver(false);
     
     const file = e.dataTransfer.files[0];
-    if (file && file.type === 'text/plain') {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const content = e.target?.result as string;
-        setResumeText(content);
-      };
-      reader.readAsText(file);
+    if (file && (file.type === 'application/pdf' || file.type === 'text/plain')) {
+      // Handle file upload the same way as handleFileUpload
+      uploadFile(file as File);
     }
-  };
+  };  
 
   const handleSubmit = () => {
     if (resumeText.trim()) {

@@ -4,9 +4,8 @@ from uuid import uuid4
 from langchain_community.vectorstores import Chroma
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from app.external import embeddings
-from app.core.config import settings
+from app.constents import VECTOR_DB_ROOT_PATH
 
-VECTOR_DB_ROOT_PATH = os.path.join(settings.BACKEND_ROOT, "vector_db")
 
 os.makedirs(VECTOR_DB_ROOT_PATH, exist_ok=True)
 
@@ -24,7 +23,7 @@ def build_chroma_from_text(resume_text: str, collection_name: Optional[str]) -> 
     splitter = RecursiveCharacterTextSplitter(chunk_size=800, chunk_overlap=100)
     chunks: List[str] = splitter.split_text(resume_text)
 
-    persist_directory = os.path.join(VECTOR_DB_ROOT_PATH, collection_name)
+    persist_directory = VECTOR_DB_ROOT_PATH / collection_name
     vector_db = Chroma(
         collection_name=collection_name, 
         embedding_function=embeddings,

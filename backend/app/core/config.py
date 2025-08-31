@@ -3,16 +3,13 @@ from pathlib import Path
 from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
-    # Backend root path - defaults to current directory if not set
-    BACKEND_ROOT: str = str(Path(__file__).parent.parent.parent)
-    
-    # Upload directory - will be created inside backend folder
+    # Upload directory relative to backend root
     UPLOAD_DIR: str = "uploads"
     
-    # Full upload path
+    # Get upload path relative to current working directory (backend/)
     @property
-    def UPLOAD_BASE_DIR(self) -> Path:
-        return Path(self.BACKEND_ROOT) / self.UPLOAD_DIR
+    def UPLOAD_BASE_DIR(self) -> str:
+        return self.UPLOAD_DIR
     
     # Ensure upload directory exists
     def ensure_upload_dir(self):
