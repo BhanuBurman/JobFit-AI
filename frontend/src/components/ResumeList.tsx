@@ -1,6 +1,8 @@
 // frontend/src/components/ResumeList.tsx
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { resumeAPI } from '../lib/api';
+import { useResume } from '../lib/ResumeContext';
 
 interface Resume {
   resume_id: number;
@@ -16,6 +18,8 @@ const ResumeList: React.FC = () => {
   const [resumes, setResumes] = useState<Resume[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const navigate = useNavigate();
+  const { updateCurrentResume } = useResume();
 
   useEffect(() => {
     loadResumes();
@@ -48,12 +52,15 @@ const ResumeList: React.FC = () => {
     }
   };
 
-  const handleView = (resume: Resume) => {
-    alert(`Viewing resume: ${resume.file_name}\n\nContent:\n${resume.resume_text}`);
-  };
+  const handleLoad = (resume: Resume) => {
+    // Update Resume Context
+    updateCurrentResume(resume.resume_text || '');
 
-  const handleEdit = (resume: Resume) => {
-    alert(`Edit functionality would open a modal to edit: ${resume.file_name}`);
+    // Store resume_id in localStorage
+    localStorage.setItem('current_resume_id', resume.resume_id.toString());
+
+    // Navigate to main page using react-router
+    navigate('/');
   };
 
   const formatDate = (dateString: string) => {
@@ -129,16 +136,10 @@ const ResumeList: React.FC = () => {
                 <div className="flex-shrink-0 ml-4">
                   <div className="flex flex-col space-y-2">
                     <button
-                      onClick={() => handleView(resume)}
-                      className="text-indigo-600 hover:text-indigo-900 text-sm font-medium"
+                      onClick={() => handleLoad(resume)}
+                      className="text-green-600 hover:text-green-900 text-sm font-medium"
                     >
-                      View
-                    </button>
-                    <button
-                      onClick={() => handleEdit(resume)}
-                      className="text-gray-600 hover:text-gray-900 text-sm font-medium"
-                    >
-                      Edit
+                      Load
                     </button>
                     <button
                       onClick={() => handleDelete(resume.resume_id, resume.file_name || 'this resume')}

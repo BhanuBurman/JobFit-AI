@@ -1,17 +1,56 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '../components/ui/button';
 import { Card, CardContent } from '../components/ui/card';
 import { Textarea } from '../components/ui/textarea';
 import { Upload, TrendingUp, Target, Users } from 'lucide-react';
 import api from '../lib/api';
+import { useResume } from '../lib/ResumeContext';
 
 export function LandingPage() {
   const [resumeText, setResumeText] = useState('');
   const [isDragOver, setIsDragOver] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { updateCurrentResume } = useResume();
 
-  const UPLOAD_ENDPOINT = "/api/v1/upload/pdf";
+  const UPLOAD_ENDPOINT = "/upload/pdf";
+
+  // Load existing resumes when page loads
+  useEffect(() => {
+    const loadCurrentResume = async () => {
+      // First check if there's a specific resume_id in localStorage
+      const storedResumeId = localStorage.getItem('current_resume_id');
+
+      if (storedResumeId) {
+        try {
+          // Load the specific resume
+          const response = await api.get(`/resumes/${storedResumeId}`);
+          const resume = response.data;
+          setResumeText(resume.resume_text || '');
+          updateCurrentResume(resume.resume_text || '');
+          return;
+        } catch (err) {
+          console.log('Stored resume not found, loading latest', err);
+          localStorage.removeItem('current_resume_id');
+          localStorage.removeItem('current_resume_text');
+        }
+      }
+
+      // Fallback: load the most recent resume
+      try {
+        const response = await api.get('/resumes');
+        if (response.data && response.data.length > 0) {
+          const latestResume = response.data[response.data.length - 1];
+          setResumeText(latestResume.resume_text || '');
+          updateCurrentResume(latestResume.resume_text || '');
+        }
+      } catch (err) {
+        console.log('No resumes found or not logged in', err);
+      }
+    };
+
+    loadCurrentResume();
+  }, []);
 
   const uploadFile = async (file: File) => {
     setIsUploading(true);
@@ -28,8 +67,13 @@ export function LandingPage() {
       console.log("Upload successful:", uploadResponse.data);
 
       // The upload endpoint now returns extracted text directly
-      if (uploadResponse.data.data?.text_length > 0) {
-        setResumeText(uploadResponse.data.data.resume_text || '');
+      if (uploadResponse.data.success && uploadResponse.data.data) {
+        const resumeData = uploadResponse.data.data;
+        setResumeText(resumeData.resume_text || '');
+
+        // Update Resume Context and localStorage
+        updateCurrentResume(resumeData.resume_text || '');
+        localStorage.setItem('current_resume_id', resumeData.resume_id.toString());
       }
 
     } catch (error: unknown) {

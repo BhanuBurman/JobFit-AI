@@ -1,7 +1,9 @@
 import './App.css'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { LandingPage } from './pages/LandingPage'
 import { Navigation } from './components/Navigation'
 import { AuthProvider, useAuth } from './lib/auth'
+import { ResumeProvider } from './lib/ResumeContext'
 import Login from './components/Login'
 import Register from './components/Register'
 import ProtectedRoute from './components/ProtectedRoute'
@@ -17,15 +19,8 @@ export interface ResumeVersion {
 }
 
 function AppContent() {
-  // State for active tab
-  const [activeTab, setActiveTab] = useState<Module>('home')
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login')
   const { isAuthenticated } = useAuth()
-
-  // Handler for tab changes
-  const handleTabChange = (tab: Module) => {
-    setActiveTab(tab)
-  }
 
   // If not authenticated, show auth pages
   if (!isAuthenticated) {
@@ -42,49 +37,53 @@ function AppContent() {
 
   return (
     <div>
-      <Navigation
-        activeTab={activeTab}
-        onTabChange={handleTabChange}
-      />
-
-      {/* Add your main content here based on activeTab */}
+      <Navigation />
       <main>
-        {activeTab === 'home' && (
-          <LandingPage />
-        )}
-
-        {activeTab === 'resume-critique' && (
-          <ProtectedRoute>
-            <ResumeManager />
-          </ProtectedRoute>
-        )}
-
-        {activeTab === 'job-fit' && (
-          <ProtectedRoute>
-            <div>
-              <h2 className="text-2xl font-bold mb-4">Job Fit Analysis</h2>
-              <p>Analyze how well you fit specific job descriptions</p>
-            </div>
-          </ProtectedRoute>
-        )}
-
-        {activeTab === 'interview-prep' && (
-          <ProtectedRoute>
-            <div>
-              <h2 className="text-2xl font-bold mb-4">Interview Preparation</h2>
-              <p>Practice common interview questions</p>
-            </div>
-          </ProtectedRoute>
-        )}
-
-        {activeTab === 'learning-plan' && (
-          <ProtectedRoute>
-            <div>
-              <h2 className="text-2xl font-bold mb-4">Learning Plan</h2>
-              <p>Get personalized learning recommendations</p>
-            </div>
-          </ProtectedRoute>
-        )}
+        <Routes>
+          <Route path="/" element={<LandingPage />} />
+          <Route
+            path="/resume-critique"
+            element={
+              <ProtectedRoute>
+                <ResumeManager />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/job-fit"
+            element={
+              <ProtectedRoute>
+                <div>
+                  <h2 className="text-2xl font-bold mb-4">Job Fit Analysis</h2>
+                  <p>Analyze how well you fit specific job descriptions</p>
+                </div>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/interview-prep"
+            element={
+              <ProtectedRoute>
+                <div>
+                  <h2 className="text-2xl font-bold mb-4">Interview Preparation</h2>
+                  <p>Practice common interview questions</p>
+                </div>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/learning-plan"
+            element={
+              <ProtectedRoute>
+                <div>
+                  <h2 className="text-2xl font-bold mb-4">Learning Plan</h2>
+                  <p>Get personalized learning recommendations</p>
+                </div>
+              </ProtectedRoute>
+            }
+          />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
       </main>
     </div>
   )
@@ -92,9 +91,13 @@ function AppContent() {
 
 function App() {
   return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
+    <BrowserRouter>
+      <AuthProvider>
+        <ResumeProvider>
+          <AppContent />
+        </ResumeProvider>
+      </AuthProvider>
+    </BrowserRouter>
   )
 }
 

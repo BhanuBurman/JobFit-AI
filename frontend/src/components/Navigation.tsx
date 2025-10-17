@@ -1,4 +1,5 @@
 import React from 'react';
+import { NavLink } from 'react-router-dom';
 import { Button } from './ui/button';
 import { Avatar, AvatarFallback } from './ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from './ui/dropdown-menu';
@@ -14,42 +15,36 @@ import {
   Sun
 } from 'lucide-react';
 import { useAuth } from '../lib/auth';
-import type { Module } from '../App';
-
-interface NavigationProps {
-  activeTab: Module;
-  onTabChange: (tab: Module) => void;
-}
 
 const tabs = [
   {
-    id: 'home' as Module,
+    path: '/',
     label: 'Home',
     icon: Home,
   },
   {
-    id: 'resume-critique' as Module,
+    path: '/resume-critique',
     label: 'Resume Critique',
     icon: FileText,
   },
   {
-    id: 'job-fit' as Module,
+    path: '/job-fit',
     label: 'Job Fit',
     icon: BarChart3,
   },
   {
-    id: 'interview-prep' as Module,
+    path: '/interview-prep',
     label: 'Interview Prep',
     icon: Mic,
   },
   {
-    id: 'learning-plan' as Module,
+    path: '/learning-plan',
     label: 'Learning Plan',
     icon: BookOpen,
   }
 ];
 
-export function Navigation({ activeTab, onTabChange }: NavigationProps) {
+export function Navigation() {
   const { user, logout } = useAuth();
 
   const handleLogout = () => {
@@ -80,23 +75,23 @@ export function Navigation({ activeTab, onTabChange }: NavigationProps) {
           <div className="flex items-center space-x-1 bg-gray-100 rounded-lg p-1">
             {tabs.map((tab) => {
               const Icon = tab.icon;
-              const isActive = activeTab === tab.id;
 
               return (
-                <Button
-                  key={tab.id}
-                  variant={isActive ? "default" : "ghost"}
-                  size="sm"
-                  onClick={() => onTabChange(tab.id)}
-                  className={`flex items-center space-x-2 px-4 py-2 rounded-md transition-all duration-200 ${
-                    isActive
-                      ? 'bg-white shadow-sm text-blue-600 border border-gray-200'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-white/50'
-                  }`}
+                <NavLink
+                  key={tab.path}
+                  to={tab.path}
+                  end={tab.path === '/'}
+                  className={({ isActive }) =>
+                    `flex items-center space-x-2 px-4 py-2 rounded-md transition-all duration-200 ${
+                      isActive
+                        ? 'bg-white shadow-sm text-blue-600 border border-gray-200'
+                        : 'text-gray-600 hover:text-gray-900 hover:bg-white/50'
+                    }`
+                  }
                 >
                   <Icon className="h-4 w-4" />
                   <span className="hidden sm:inline">{tab.label}</span>
-                </Button>
+                </NavLink>
               );
             })}
           </div>

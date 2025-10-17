@@ -15,12 +15,13 @@ class PDFExtractionService(BaseService):
         loader = PyPDFLoader(file_path)
         pages = loader.load()
         full_text = "\n".join([page.page_content for page in pages])
-        collection_name = f"resumes_{uuid4().hex[:8]}"
-        vector_db = build_chroma_from_text(full_text, collection_name=collection_name)
-        print(vector_db)
+        # Disabling this resume vector embedding
+        # collection_name = f"resumes_{uuid4().hex[:8]}"
+        # vector_db = build_chroma_from_text(full_text, collection_name=collection_name)
+        # print(vector_db)
 
         data = PDFExtractionResponse(
-            collection_name=collection_name,
+            collection_name="VECTOR DB DISABLED!",
             pages=len(pages),
             full_text=full_text,
         )

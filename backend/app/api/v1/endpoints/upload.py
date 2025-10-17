@@ -26,7 +26,7 @@ async def upload_pdf(
         if not upload_result.get("success"):
             raise HTTPException(status_code=400, detail=upload_result.get("message", "Invalid file"))
 
-        file_path = upload_result["data"]["path"]
+        file_path = upload_result["data"].path
 
         # Step 2: Extract text from PDF
         pdf_result = await pdf_service.process(file_path)
@@ -34,7 +34,7 @@ async def upload_pdf(
         if not pdf_result.get("success"):
             raise HTTPException(status_code=400, detail=pdf_result.get("message", "Error extracting PDF text"))
 
-        extracted_text = pdf_result["data"]["full_text"]
+        extracted_text = pdf_result["data"].full_text
 
         # Step 3: Create resume record in database
         db_resume = ResumeDetails(
@@ -55,10 +55,11 @@ async def upload_pdf(
                 "name": file.filename,
                 "path": file_path,
                 "size": file.size,
-                "created_at": upload_result["data"]["created_at"],
+                "created_at": upload_result["data"].created_at,
                 "resume_id": db_resume.resume_id,
-                "pages_processed": pdf_result["data"]["pages"],
-                "text_length": len(extracted_text)
+                "pages_processed": pdf_result["data"].pages,
+                "text_length": len(extracted_text),
+                "resume_text": extracted_text  # Add full text to response
             }
         }
 
