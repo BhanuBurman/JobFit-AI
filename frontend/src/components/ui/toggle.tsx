@@ -1,5 +1,6 @@
 "use client";
 
+// eslint-disable-next-line react-refresh/only-export-components
 import * as React from "react";
 import * as TogglePrimitive from "@radix-ui/react-toggle@1.1.2";
 import { cva, type VariantProps } from "class-variance-authority@0.7.1";
@@ -44,4 +45,5 @@ function Toggle({
   );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export { Toggle, toggleVariants };

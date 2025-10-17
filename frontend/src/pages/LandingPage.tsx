@@ -9,50 +9,46 @@ export function LandingPage() {
   const [resumeText, setResumeText] = useState('');
   const [isDragOver, setIsDragOver] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
-  const [uploadedFileInfo, setUploadedFileInfo] = useState({});
-  const [error, setError] = useState<string | null>(null); // Add error state
+  const [error, setError] = useState<string | null>(null);
 
   const UPLOAD_ENDPOINT = "/api/v1/upload/pdf";
-  const EXTRACT_ENDPOINT = "/api/v1/extract/pdf";
 
   const uploadFile = async (file: File) => {
     setIsUploading(true);
-    setError(null); // Add error state
-    
+    setError(null);
+
     try {
       console.log("Starting upload for file:", file.name);
-      
+
       const formData = new FormData();
       formData.append("file", file);
-      
+
+      // Single API call - upload now handles both file upload and text extraction
       const uploadResponse = await api.post(UPLOAD_ENDPOINT, formData);
       console.log("Upload successful:", uploadResponse.data);
-      
-      setUploadedFileInfo(uploadResponse.data.data);
-      
-      // Check if path exists before extracting
-      if (!uploadResponse.data.data?.path) {
-        throw new Error("No file path received from upload");
+
+      // The upload endpoint now returns extracted text directly
+      if (uploadResponse.data.data?.text_length > 0) {
+        setResumeText(uploadResponse.data.data.resume_text || '');
       }
-      
-      console.log("Starting text extraction...");
-      const extractResponse = await api.post(EXTRACT_ENDPOINT, {
-        file_path: uploadResponse.data.data.path
-      });
-      
-      console.log("Extraction successful:", extractResponse.data);
-      setResumeText(extractResponse.data.data.full_text);
-      
-    } catch (error: any) {
-      console.error("Upload/Extract error:", error);
-      
-      if (error.response?.status === 422) {
-        console.error("Validation error details:", error.response.data);
-        setError("Invalid file format or data. Please try again.");
-      } else if (error.response?.status === 500) {
-        setError("Server error. Please try again later.");
-      } else {
+
+    } catch (error: unknown) {
+      console.error("Upload error:", error);
+
+      if (error && typeof error === 'object' && 'response' in error) {
+        const axiosError = error as { response?: { status: number; data: unknown } };
+        if (axiosError.response?.status === 422) {
+          console.error("Validation error details:", axiosError.response.data);
+          setError("Invalid file format or data. Please try again.");
+        } else if (axiosError.response?.status === 500) {
+          setError("Server error. Please try again later.");
+        } else {
+          setError("An error occurred during upload.");
+        }
+      } else if (error instanceof Error) {
         setError(error.message || "An error occurred during upload.");
+      } else {
+        setError("An error occurred during upload.");
       }
     } finally {
       setIsUploading(false);
@@ -130,8 +126,8 @@ Tools: Git, Docker, AWS, Jenkins, Kubernetes`;
             </p>
 
             {/* Upload Widget */}
-            <Card className="max-w-2xl mx-auto mb-16 shadow-xl border-0 bg-white">
-              <CardContent className="p-8">
+            <Card className="h-screen max-w-4xl mx-auto mb-16 shadow-xl border-0 bg-white">
+              <CardContent className="p-8 flex justify-center items-center gap-5">
                 <div
                   className={`border-2 border-dashed rounded-xl p-12 text-center transition-all duration-200 ${
                     isDragOver 
@@ -158,15 +154,22 @@ Tools: Git, Docker, AWS, Jenkins, Kubernetes`;
                       onChange={handleFileUpload}
                       className="hidden"
                     />
-                    <Button 
+                    <Button
                       asChild
                       size="lg"
                       className="bg-blue-600 hover:bg-blue-700 text-white px-8"
+                      disabled={isUploading}
                     >
                       <label htmlFor="resume-upload" className="cursor-pointer">
-                        Upload Resume
+                        {isUploading ? 'Uploading...' : 'Upload Resume'}
                       </label>
                     </Button>
+
+                    {error && (
+                      <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md">
+                        <p className="text-red-600 text-sm">{error}</p>
+                      </div>
+                    )}
                     
                     <div className="flex items-center space-x-4">
                       <div className="flex-1 h-px bg-gray-300"></div>
@@ -185,7 +188,7 @@ Tools: Git, Docker, AWS, Jenkins, Kubernetes`;
                 </div>
 
                 {resumeText && (
-                  <div className="mt-8 space-y-4">
+                  <div className=" w-full space-y-4 overflow-y-auto">
                     <div className="text-left">
                       <label className="block text-sm text-gray-700 mb-2">
                         Resume Content Preview:
@@ -194,7 +197,7 @@ Tools: Git, Docker, AWS, Jenkins, Kubernetes`;
                         value={resumeText}
                         onChange={(e) => setResumeText(e.target.value)}
                         placeholder="Your resume content will appear here..."
-                        className="h-32 text-sm bg-gray-50 border-gray-200"
+                        className="max-h-[35rem] text-sm bg-gray-50 border-gray-200 overflow-y-auto"
                       />
                     </div>
                     <Button 

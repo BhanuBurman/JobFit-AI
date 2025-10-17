@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Button } from './ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import { Card, CardContent } from './ui/card';
 import { Badge } from './ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Input } from './ui/input';
@@ -77,7 +77,7 @@ const mockJobs: JobListing[] = [
   }
 ];
 
-export function JobFit({ currentResume, onUpdateResume }: JobFitProps) {
+export function JobFit({ currentResume }: JobFitProps) {
   const [selectedRole, setSelectedRole] = useState('');
   const [location, setLocation] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
