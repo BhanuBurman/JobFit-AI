@@ -1,99 +1,116 @@
-import React, { useState } from 'react';
-import { Button } from './ui/button';
-import { Card, CardContent } from './ui/card';
-import { Badge } from './ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { Input } from './ui/input';
-import { Progress } from './ui/progress';
-import { 
-  Target, 
-  MapPin, 
-  Search, 
-  Play, 
-  ChevronDown, 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import React, { useEffect, useState } from 'react';
+import { Button } from '../components/ui/button';
+import { Card, CardContent } from '../components/ui/card';
+import { Badge } from '../components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
+import { Input } from '../components/ui/input';
+import { Progress } from '../components/ui/progress';
+import {
+  Target,
+  MapPin,
+  Search,
+  ChevronDown,
   ChevronUp,
   Check,
-  X,
   Building,
   DollarSign,
-  Clock
+  Clock,
+  AlertCircle,
+  Loader2
 } from 'lucide-react';
-import type { ResumeVersion } from '../App';
+import { searchJobsFromResume, type JobMatch, getJobDetail, type JobDetailResponse, jobfitAPI } from '../lib/api';
+import { useResume } from '../lib/ResumeContext';
 
-interface JobFitProps {
-  currentResume?: ResumeVersion;
-  onUpdateResume: (content: string, changes?: string[]) => void;
-}
-
-interface JobListing {
-  id: string;
-  title: string;
-  company: string;
-  location: string;
-  salary: string;
-  fitScore: number;
-  matchedSkills: string[];
-  missingSkills: string[];
-  description: string;
-  requirements: string[];
-}
-
-const mockJobs: JobListing[] = [
-  {
-    id: '1',
-    title: 'Senior Software Engineer',
-    company: 'TechCorp Inc.',
-    location: 'San Francisco, CA',
-    salary: '$140k - $180k',
-    fitScore: 92,
-    matchedSkills: ['React', 'Node.js', 'JavaScript', 'PostgreSQL', 'AWS'],
-    missingSkills: ['Kubernetes', 'GraphQL'],
-    description: 'We are looking for a Senior Software Engineer to join our growing team...',
-    requirements: ['5+ years React experience', 'Backend API development', 'Cloud platforms']
-  },
-  {
-    id: '2',
-    title: 'Full Stack Developer',
-    company: 'StartupXYZ',
-    location: 'Remote',
-    salary: '$110k - $140k',
-    fitScore: 85,
-    matchedSkills: ['JavaScript', 'React', 'Express', 'MongoDB'],
-    missingSkills: ['TypeScript', 'Docker', 'Redux'],
-    description: 'Join our fast-growing startup as a Full Stack Developer...',
-    requirements: ['3+ years full-stack development', 'Modern JavaScript frameworks', 'Database design']
-  },
-  {
-    id: '3',
-    title: 'Backend Engineer',
-    company: 'DataFlow Solutions',
-    location: 'Austin, TX',
-    salary: '$120k - $160k',
-    fitScore: 78,
-    matchedSkills: ['Node.js', 'Python', 'PostgreSQL', 'Redis'],
-    missingSkills: ['Go', 'Microservices', 'Event Streaming'],
-    description: 'We need a skilled Backend Engineer to build scalable systems...',
-    requirements: ['Backend development expertise', 'Database optimization', 'API design']
-  }
-];
-
-export function JobFit({ currentResume }: JobFitProps) {
+export function JobFit() {
+  const { currentResume } = useResume();
   const [selectedRole, setSelectedRole] = useState('');
   const [location, setLocation] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [expandedJob, setExpandedJob] = useState<string | null>(null);
-  const [jobs, setJobs] = useState<JobListing[]>([]);
+  const [jobs, setJobs] = useState<JobMatch[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [detailsByJobId, setDetailsByJobId] = useState<Record<string, JobDetailResponse>>({});
+  const [loadingDetailId, setLoadingDetailId] = useState<string | null>(null);
+  const [analysisId, setAnalysisId] = useState<number | null>(null);
+  const [buttonLabel, setButtonLabel] = useState('Find Matching Jobs');
+
+  useEffect(() => {
+    const preload = async () => {
+      if (!currentResume?.id) return;
+      try {
+        const saved = await jobfitAPI.getLatest(currentResume.id, selectedRole || undefined, location || undefined);
+        setJobs(saved.result.matches);
+        setAnalysisId(saved.analysis_id);
+        setButtonLabel('Search Again');
+      } catch {
+        setAnalysisId(null);
+        setButtonLabel('Find Matching Jobs');
+      }
+    };
+    void preload();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentResume?.id]);
 
   const handleRunAnalysis = async () => {
+    if (!currentResume?.content) {
+      setError("No resume available. Please upload a resume first.");
+      return;
+    }
+
     setIsAnalyzing(true);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    setJobs(mockJobs);
-    setIsAnalyzing(false);
+    setError(null);
+
+    try {
+      const searchQuery = `${currentResume.content.slice(0, 500)} ${selectedRole ? `role: ${selectedRole}` : ''} ${location ? `location: ${location}` : ''}`.trim();
+
+      if (analysisId) {
+        const refreshed = await jobfitAPI.refresh(analysisId);
+        setJobs(refreshed.result.matches);
+      } else {
+        const response = await searchJobsFromResume(
+          searchQuery,
+          currentResume.id,
+          selectedRole || undefined,
+          location || undefined,
+          undefined,
+          10,
+          0.6
+        );
+        setJobs(response.matches);
+        try {
+          const saved = await jobfitAPI.getLatest(currentResume.id, selectedRole || undefined, location || undefined);
+          setAnalysisId(saved.analysis_id);
+          setButtonLabel('Search Again');
+        } catch {
+          // ignore preload failure
+        }
+      }
+    } catch (error) {
+      console.error('Error searching jobs:', error);
+      setError('Failed to search for matching jobs. Please try again.');
+      setJobs([]);
+    } finally {
+      setIsAnalyzing(false);
+    }
   };
 
-  const toggleJobExpansion = (jobId: string) => {
-    setExpandedJob(expandedJob === jobId ? null : jobId);
+  const toggleJobExpansion = async (jobTitle: string, jobId?: string) => {
+    const next = expandedJob === jobTitle ? null : jobTitle;
+    setExpandedJob(next);
+
+    if (next && jobId && !detailsByJobId[jobId]) {
+      setLoadingDetailId(jobId);
+      try {
+        const detail = await getJobDetail(jobId);
+        setDetailsByJobId(prev => ({ ...prev, [jobId]: detail }));
+      } catch (e) {
+        // Non-fatal; we keep the preview description
+        console.error('Failed to load job detail', e);
+      } finally {
+        setLoadingDetailId(null);
+      }
+    }
   };
 
   if (!currentResume) {
@@ -161,7 +178,7 @@ export function JobFit({ currentResume }: JobFitProps) {
                     <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                     <Input
                       value={location}
-                      onChange={(e) => setLocation(e.target.value)}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLocation(e.target.value)}
                       placeholder="Enter location or remote"
                       className="pl-10 bg-white"
                     />
@@ -169,20 +186,20 @@ export function JobFit({ currentResume }: JobFitProps) {
                 </div>
 
                 <div className="md:col-span-2">
-                  <Button 
+                  <Button
                     onClick={handleRunAnalysis}
-                    disabled={isAnalyzing}
+                    disabled={isAnalyzing || !currentResume}
                     className="w-full bg-blue-600 hover:bg-blue-700 text-white"
                   >
                     {isAnalyzing ? (
                       <div className="flex items-center space-x-2">
-                        <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-                        <span>Analyzing...</span>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <span>Searching Jobs...</span>
                       </div>
                     ) : (
                       <div className="flex items-center space-x-2">
-                        <Play className="h-4 w-4" />
-                        <span>Run Analysis</span>
+                        <Search className="h-4 w-4" />
+                        <span>{buttonLabel}</span>
                       </div>
                     )}
                   </Button>
@@ -200,31 +217,42 @@ export function JobFit({ currentResume }: JobFitProps) {
                 Found {jobs.length} matching positions
               </h2>
               <p className="text-sm text-gray-600">
-                Sorted by fit score
+                Sorted by similarity score
               </p>
             </div>
 
-            {jobs.map((job) => (
-              <Card key={job.id} className="bg-white shadow-lg border-0 hover:shadow-xl transition-all duration-200">
+            {error && (
+              <Card className="bg-red-50 border-red-200">
+                <CardContent className="p-4">
+                  <div className="flex items-center space-x-2 text-red-800">
+                    <AlertCircle className="h-5 w-5" />
+                    <span>{error}</span>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {jobs.map((job, index) => (
+              <Card key={`${job.title}-${index}`} className="bg-white shadow-lg border-0 hover:shadow-xl transition-all duration-200">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex-1">
                       <div className="flex items-center space-x-3 mb-2">
                         <h3 className="text-lg text-gray-900">{job.title}</h3>
-                        <Badge 
-                          variant={job.fitScore >= 90 ? "default" : job.fitScore >= 80 ? "secondary" : "outline"}
+                        <Badge
+                          variant="outline"
                           className={`${
-                            job.fitScore >= 90 
-                              ? 'bg-green-100 text-green-800 border-green-200' 
-                              : job.fitScore >= 80 
+                            job.similarity_score >= 0.8
+                              ? 'bg-green-100 text-green-800 border-green-200'
+                              : job.similarity_score >= 0.6
                               ? 'bg-blue-100 text-blue-800 border-blue-200'
                               : 'bg-orange-100 text-orange-800 border-orange-200'
                           }`}
                         >
-                          {job.fitScore}% match
+                          {(job.similarity_score * 100).toFixed(0)}% match
                         </Badge>
                       </div>
-                      
+
                       <div className="flex items-center space-x-4 text-sm text-gray-600 mb-3">
                         <div className="flex items-center space-x-1">
                           <Building className="h-4 w-4" />
@@ -234,38 +262,36 @@ export function JobFit({ currentResume }: JobFitProps) {
                           <MapPin className="h-4 w-4" />
                           <span>{job.location}</span>
                         </div>
-                        <div className="flex items-center space-x-1">
-                          <DollarSign className="h-4 w-4" />
-                          <span>{job.salary}</span>
-                        </div>
+                        {job.salary_range && (
+                          <div className="flex items-center space-x-1">
+                            <DollarSign className="h-4 w-4" />
+                            <span>{job.salary_range}</span>
+                          </div>
+                        )}
+                        {(job.metadata as any)?.formatted_work_type && (
+                          <div className="flex items-center space-x-1">
+                            <span className="h-1.5 w-1.5 bg-gray-400 rounded-full" />
+                            <span>{String((job.metadata as any).formatted_work_type)}</span>
+                          </div>
+                        )}
+                        {(job.metadata as any)?.formatted_experience_level && (
+                          <div className="flex items-center space-x-1">
+                            <span className="h-1.5 w-1.5 bg-gray-400 rounded-full" />
+                            <span>{String((job.metadata as any).formatted_experience_level)}</span>
+                          </div>
+                        )}
                       </div>
-
-                      {/* Fit Score Bar */}
-                      <div className="mb-4">
-                        <div className="flex items-center justify-between text-sm mb-1">
-                          <span className="text-gray-600">Fit Score</span>
-                          <span className="text-gray-900">{job.fitScore}/100</span>
-                        </div>
-                        <Progress value={job.fitScore} className="h-2" />
-                      </div>
-
                       {/* Skills Preview */}
                       <div className="flex flex-wrap gap-2 mb-4">
-                        {job.matchedSkills.slice(0, 3).map((skill) => (
+                        {job.skills.slice(0, 5).map((skill) => (
                           <Badge key={skill} variant="outline" className="text-green-700 border-green-200 bg-green-50">
                             <Check className="h-3 w-3 mr-1" />
                             {skill}
                           </Badge>
                         ))}
-                        {job.missingSkills.slice(0, 2).map((skill) => (
-                          <Badge key={skill} variant="outline" className="text-red-700 border-red-200 bg-red-50">
-                            <X className="h-3 w-3 mr-1" />
-                            {skill}
-                          </Badge>
-                        ))}
-                        {(job.matchedSkills.length + job.missingSkills.length > 5) && (
+                        {job.skills.length > 5 && (
                           <Badge variant="outline" className="text-gray-600">
-                            +{job.matchedSkills.length + job.missingSkills.length - 5} more
+                            +{job.skills.length - 5} more
                           </Badge>
                         )}
                       </div>
@@ -273,10 +299,10 @@ export function JobFit({ currentResume }: JobFitProps) {
 
                     <Button
                       variant="ghost"
-                      onClick={() => toggleJobExpansion(job.id)}
+                      onClick={() => toggleJobExpansion(job.title, String(((job.metadata as any)?.job_id) ?? `${job.title}-${job.company}`))}
                       className="ml-4"
                     >
-                      {expandedJob === job.id ? (
+                      {expandedJob === job.title ? (
                         <ChevronUp className="h-5 w-5" />
                       ) : (
                         <ChevronDown className="h-5 w-5" />
@@ -285,67 +311,113 @@ export function JobFit({ currentResume }: JobFitProps) {
                   </div>
 
                   {/* Expanded Details */}
-                  {expandedJob === job.id && (
+                  {expandedJob === job.title && (
                     <div className="border-t border-gray-200 pt-6 space-y-6">
                       <div>
                         <h4 className="text-sm text-gray-900 mb-3">Job Description</h4>
-                        <p className="text-sm text-gray-600 leading-relaxed">
-                          {job.description}
+                        <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-line">
+                          {(() => {
+                            const jid = String(((job.metadata as any)?.job_id) ?? `${job.title}-${job.company}`);
+                            if (loadingDetailId === jid) return 'Loading full description...';
+                            const detail = detailsByJobId[jid];
+                            return detail?.full_description ?? job.description;
+                          })()}
                         </p>
+                      </div>
+
+                      <div>
+                        <h4 className="text-sm text-gray-900 mb-3 flex items-center">
+                          <Check className="h-4 w-4 text-green-600 mr-2" />
+                          Required Skills ({job.skills.length})
+                        </h4>
+                        <div className="flex flex-wrap gap-2">
+                          {job.skills.map((skill) => (
+                            <Badge key={skill} variant="outline" className="text-green-700 border-green-200 bg-green-50">
+                              {skill}
+                            </Badge>
+                          ))}
+                        </div>
                       </div>
 
                       <div className="grid md:grid-cols-2 gap-6">
                         <div>
-                          <h4 className="text-sm text-gray-900 mb-3 flex items-center">
-                            <Check className="h-4 w-4 text-green-600 mr-2" />
-                            Matched Skills ({job.matchedSkills.length})
-                          </h4>
-                          <div className="flex flex-wrap gap-2">
-                            {job.matchedSkills.map((skill) => (
-                              <Badge key={skill} variant="outline" className="text-green-700 border-green-200 bg-green-50">
-                                {skill}
-                              </Badge>
-                            ))}
-                          </div>
+                          <h4 className="text-sm text-gray-900 mb-3">Compensation</h4>
+                          <ul className="space-y-2 text-sm text-gray-600">
+                            {((job.metadata as any)?.min_salary) && ((job.metadata as any)?.max_salary) && (
+                              <li className="flex items-start space-x-2">
+                                <div className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0"></div>
+                                <span>
+                                  Range: {job.salary_range}
+                                </span>
+                              </li>
+                            )}
+                            {((job.metadata as any)?.currency) && ((job.metadata as any)?.pay_period) && (
+                              <li className="flex items-start space-x-2">
+                                <div className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0"></div>
+                                <span>
+                                  Pay: {(job.metadata as any).currency} ({typeof (job.metadata as any).pay_period === 'string' ? ((job.metadata as any).pay_period as string).toLowerCase() : String((job.metadata as any).pay_period)})
+                                </span>
+                              </li>
+                            )}
+                          </ul>
                         </div>
 
                         <div>
-                          <h4 className="text-sm text-gray-900 mb-3 flex items-center">
-                            <X className="h-4 w-4 text-red-600 mr-2" />
-                            Missing Skills ({job.missingSkills.length})
-                          </h4>
-                          <div className="flex flex-wrap gap-2">
-                            {job.missingSkills.map((skill) => (
-                              <Badge key={skill} variant="outline" className="text-red-700 border-red-200 bg-red-50">
-                                {skill}
-                              </Badge>
-                            ))}
-                          </div>
+                          <h4 className="text-sm text-gray-900 mb-3">Posting</h4>
+                          <ul className="space-y-2 text-sm text-gray-600">
+                            {(job.metadata as any)?.job_posting_url && (
+                              <li className="flex items-start space-x-2">
+                                <div className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0"></div>
+                                <a
+                                  href={String((job.metadata as any).job_posting_url)}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="text-blue-600 hover:underline"
+                                >
+                                  View posting
+                                </a>
+                              </li>
+                            )}
+                            {(job.metadata as any)?.listed_time && (
+                              <li className="flex items-start space-x-2">
+                                <div className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0"></div>
+                                <span>
+                                  Posted: {new Date(String((job.metadata as any).listed_time)).toLocaleDateString()}
+                                </span>
+                              </li>
+                            )}
+                            {((job.metadata as any)?.applies || (job.metadata as any)?.views) && (
+                              <li className="flex items-start space-x-2">
+                                <div className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0"></div>
+                                <span>
+                                  {(job.metadata as any)?.applies ? `${(job.metadata as any).applies} applies` : ''}
+                                  {((job.metadata as any)?.applies && (job.metadata as any)?.views) ? ' • ' : ''}
+                                  {(job.metadata as any)?.views ? `${(job.metadata as any).views} views` : ''}
+                                </span>
+                              </li>
+                            )}
+                          </ul>
                         </div>
                       </div>
 
-                      <div>
-                        <h4 className="text-sm text-gray-900 mb-3">Requirements</h4>
-                        <ul className="space-y-2">
-                          {job.requirements.map((req, index) => (
-                            <li key={index} className="flex items-start space-x-2 text-sm text-gray-600">
-                              <div className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0"></div>
-                              <span>{req}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-
                       <div className="flex items-center space-x-3 pt-4 border-t border-gray-200">
-                        <Button className="bg-blue-600 hover:bg-blue-700 text-white">
-                          Apply Now
-                        </Button>
+                        {(job.metadata as any)?.job_posting_url ? (
+                          <a href={String((job.metadata as any).job_posting_url)} target="_blank" rel="noreferrer">
+                            <Button className="bg-blue-600 hover:bg-blue-700 text-white">
+                              Apply Now
+                            </Button>
+                          </a>
+                        ) : (
+                          <Button className="bg-blue-600 hover:bg-blue-700 text-white" disabled>
+                            Apply Now
+                          </Button>
+                        )}
                         <Button variant="outline" className="bg-white border-gray-200">
                           Save Job
                         </Button>
                         <div className="flex items-center space-x-1 text-xs text-gray-500 ml-auto">
                           <Clock className="h-3 w-3" />
-                          <span>Posted 2 days ago</span>
+                          <span>Posted recently</span>
                         </div>
                       </div>
                     </div>
@@ -365,7 +437,7 @@ export function JobFit({ currentResume }: JobFitProps) {
               </div>
               <h3 className="text-lg mb-3 text-gray-900">Ready to Find Your Perfect Job?</h3>
               <p className="text-gray-600 mb-6">
-                Set your preferences above and click "Run Analysis" to discover positions that match your skills.
+                Set your preferences above and click "Find Matching Jobs" to discover positions that match your resume using AI-powered semantic search.
               </p>
             </CardContent>
           </Card>

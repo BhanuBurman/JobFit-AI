@@ -9,6 +9,7 @@ import Register from './components/Register'
 import ProtectedRoute from './components/ProtectedRoute'
 import ResumeManager from './components/ResumeManager'
 import { useState } from 'react'
+import { JobFit } from './pages/JobFit'
 
 export type Module = 'home' | 'resume-critique' | 'job-fit' | 'interview-prep' | 'learning-plan'
 
@@ -16,6 +17,7 @@ export interface ResumeVersion {
   version: number
   filename: string
   uploadedAt: Date
+  content: string
 }
 
 function AppContent() {
@@ -36,10 +38,11 @@ function AppContent() {
   }
 
   return (
-    <div>
-      <Navigation />
-      <main>
-        <Routes>
+    <ResumeProvider>
+      <div>
+        <Navigation />
+        <main>
+          <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route
             path="/resume-critique"
@@ -53,10 +56,7 @@ function AppContent() {
             path="/job-fit"
             element={
               <ProtectedRoute>
-                <div>
-                  <h2 className="text-2xl font-bold mb-4">Job Fit Analysis</h2>
-                  <p>Analyze how well you fit specific job descriptions</p>
-                </div>
+                <JobFit />
               </ProtectedRoute>
             }
           />
@@ -83,9 +83,10 @@ function AppContent() {
             }
           />
           <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </main>
-    </div>
+          </Routes>
+        </main>
+      </div>
+    </ResumeProvider>
   )
 }
 
@@ -93,9 +94,7 @@ function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <ResumeProvider>
-          <AppContent />
-        </ResumeProvider>
+        <AppContent />
       </AuthProvider>
     </BrowserRouter>
   )

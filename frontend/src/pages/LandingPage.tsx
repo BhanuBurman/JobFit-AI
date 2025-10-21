@@ -11,13 +11,15 @@ export function LandingPage() {
   const [isDragOver, setIsDragOver] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { updateCurrentResume } = useResume();
+  const { setCurrentResumeId } = useResume();
 
   const UPLOAD_ENDPOINT = "/upload/pdf";
 
   // Load existing resumes when page loads
   useEffect(() => {
     const loadCurrentResume = async () => {
+      const token = localStorage.getItem('token');
+      if (!token) return;
       // First check if there's a specific resume_id in localStorage
       const storedResumeId = localStorage.getItem('current_resume_id');
 
@@ -27,12 +29,11 @@ export function LandingPage() {
           const response = await api.get(`/resumes/${storedResumeId}`);
           const resume = response.data;
           setResumeText(resume.resume_text || '');
-          updateCurrentResume(resume.resume_text || '');
+          await setCurrentResumeId(resume.resume_id);
           return;
         } catch (err) {
           console.log('Stored resume not found, loading latest', err);
           localStorage.removeItem('current_resume_id');
-          localStorage.removeItem('current_resume_text');
         }
       }
 
@@ -42,7 +43,7 @@ export function LandingPage() {
         if (response.data && response.data.length > 0) {
           const latestResume = response.data[response.data.length - 1];
           setResumeText(latestResume.resume_text || '');
-          updateCurrentResume(latestResume.resume_text || '');
+          await setCurrentResumeId(latestResume.resume_id);
         }
       } catch (err) {
         console.log('No resumes found or not logged in', err);
@@ -71,9 +72,8 @@ export function LandingPage() {
         const resumeData = uploadResponse.data.data;
         setResumeText(resumeData.resume_text || '');
 
-        // Update Resume Context and localStorage
-        updateCurrentResume(resumeData.resume_text || '');
-        localStorage.setItem('current_resume_id', resumeData.resume_id.toString());
+        // Update current resume by ID only
+        await setCurrentResumeId(resumeData.resume_id);
       }
 
     } catch (error: unknown) {

@@ -47,7 +47,7 @@ const ResumeManager: React.FC = () => {
         </div>
 
           {/* {activeTab === 'upload' && <ResumeUpload />} */}
-          {activeTab === 'review' && currentResume && <ResumeReview resumeText={currentResume.content} />}
+          {activeTab === 'review' && currentResume && <ResumeReview />}
           {activeTab === 'list' && <ResumeList />}
       </div>
     </div>

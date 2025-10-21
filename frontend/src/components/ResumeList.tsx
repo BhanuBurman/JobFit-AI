@@ -19,7 +19,7 @@ const ResumeList: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const navigate = useNavigate();
-  const { updateCurrentResume } = useResume();
+  const { setCurrentResumeId } = useResume();
 
   useEffect(() => {
     loadResumes();
@@ -52,14 +52,8 @@ const ResumeList: React.FC = () => {
     }
   };
 
-  const handleLoad = (resume: Resume) => {
-    // Update Resume Context
-    updateCurrentResume(resume.resume_text || '');
-
-    // Store resume_id in localStorage
-    localStorage.setItem('current_resume_id', resume.resume_id.toString());
-
-    // Navigate to main page using react-router
+  const handleLoad = async (resume: Resume) => {
+    await setCurrentResumeId(resume.resume_id);
     navigate('/');
   };
 
