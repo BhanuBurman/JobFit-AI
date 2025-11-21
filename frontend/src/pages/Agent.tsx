@@ -6,7 +6,7 @@ import { Upload, TrendingUp, Target, Users } from 'lucide-react';
 import api from '../lib/api';
 import { useResume } from '../context/ResumeContext';
 
-export function LandingPage() {
+export function Agent() {
   const [resumeText, setResumeText] = useState('');
   const [isDragOver, setIsDragOver] = useState(false);
   const [isUploading, setIsUploading] = useState(false);

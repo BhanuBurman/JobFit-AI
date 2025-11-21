@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../lib/auth';
 import ResumeList from './ResumeList';
 import ResumeReview from './ResumeReview';
-import { useResume } from '../lib/ResumeContext';
+import { useResume } from '../context/ResumeContext';
 
 const ResumeManager: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'review' | 'list'>('review');

@@ -5,6 +5,7 @@ import { Avatar, AvatarFallback } from './ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from './ui/dropdown-menu';
 import {
   Home,
+  HatGlasses,
   FileText,
   BarChart3,
   Mic,
@@ -12,11 +13,18 @@ import {
   User,
   Settings,
   LogOut,
-  Sun
+  Sun,
+  Moon
 } from 'lucide-react';
 import { useAuth } from '../lib/auth';
+import { useTheme } from '../context/ThemeContext';
 
 const tabs = [
+  {
+    path: '/agent',
+    label: 'Agent',
+    icon: HatGlasses
+  },
   {
     path: '/',
     label: 'Home',
@@ -58,6 +66,8 @@ export function Navigation() {
   const getUserDisplayName = (firstName: string, lastName: string) => {
     return `${firstName} ${lastName}`;
   };
+
+  const {theme, toggleTheme} = useTheme();
 
   return (
     <nav className="bg-white border-b border-gray-200 sticky top-0 z-50">
@@ -102,10 +112,10 @@ export function Navigation() {
             <Button
               variant="ghost"
               size="sm"
-              // onClick={toggleTheme}
+              onClick={toggleTheme}
               className="h-9 w-9 p-0 rounded-full"
             >
-              <Sun className="h-4 w-4" />
+              {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className='h-4 w-4'/>}
             </Button>
 
             {/* User Dropdown */}

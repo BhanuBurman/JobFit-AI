@@ -5,6 +5,7 @@ class ResumeReview(BaseModel):
     buzzwords: List[str] = Field(description="overused or cliché buzzwords in the resume")
     weak_sentences: List[str] = Field(description="vague, grammatically incorrect, or weak sentences")
     strong_points: List[str] = Field(description="the strongest elements of the resume")
+    skills: List[str] = Field(description="all technical and soft skills mentioned in the resume")
 
     skills_score: int = Field(ge=0, le=10, description="Score relevance and strength of skills")
     experience_score: int = Field(ge=0, le=10, description="Score for relevance and impact of experience")

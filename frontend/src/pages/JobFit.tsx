@@ -20,7 +20,7 @@ import {
   Loader2
 } from 'lucide-react';
 import { searchJobsFromResume, type JobMatch, getJobDetail, type JobDetailResponse, jobfitAPI } from '../lib/api';
-import { useResume } from '../lib/ResumeContext';
+import { useResume } from '../context/ResumeContext';
 
 export function JobFit() {
   const { currentResume } = useResume();

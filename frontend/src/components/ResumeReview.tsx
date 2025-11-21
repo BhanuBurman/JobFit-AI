@@ -7,7 +7,7 @@ import { Textarea } from './ui/textarea';
 import { Progress } from './ui/progress';
 import { Alert, AlertDescription } from './ui/alert';
 import { resumeReviewAPI } from '../lib/api';
-import { useResume } from '../lib/ResumeContext';
+import { useResume } from '../context/ResumeContext';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from './ui/tabs';
 
 interface ResumeReviewData {

@@ -18,6 +18,8 @@ class ResumeReviewService(BaseService):
         self.prompt = ChatPromptTemplate.from_template(
             """
 You are an expert resume reviewer. Analyze the following resume and return structured feedback.
+Extract ALL technical skills, programming languages, frameworks, tools, technologies, and soft skills mentioned in the resume.
+
 Resume:
 {resume_text}
 

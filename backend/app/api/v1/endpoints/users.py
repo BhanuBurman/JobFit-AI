@@ -15,7 +15,7 @@ from app.services.auth_service import (
 )
 
 router = APIRouter()
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/token")
 
 @router.post("/register", response_model=User)
 async def register_user(user_data: UserCreate, db: Session = Depends(get_db)):

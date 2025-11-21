@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { resumeAPI } from '../lib/api';
-import { useResume } from '../lib/ResumeContext';
+import { useResume } from '../context/ResumeContext';
 
 interface Resume {
   resume_id: number;

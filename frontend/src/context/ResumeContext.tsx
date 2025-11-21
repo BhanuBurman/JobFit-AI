@@ -1,6 +1,6 @@
 // frontend/src/lib/ResumeContext.tsx
 import React, { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
-import { resumeAPI } from './api';
+import { resumeAPI } from '../lib/api';
 
 export interface ResumeVersion {
   id: number;
