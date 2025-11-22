@@ -11,47 +11,39 @@ export function LandingPage() {
   const [isDragOver, setIsDragOver] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { setCurrentResumeId } = useResume();
+  const { currentResume, setCurrentResumeId } = useResume();
 
   const UPLOAD_ENDPOINT = "/upload/pdf";
 
   // Load existing resumes when page loads
-  useEffect(() => {
-    const loadCurrentResume = async () => {
-      const token = localStorage.getItem('token');
-      if (!token) return;
-      // First check if there's a specific resume_id in localStorage
-      const storedResumeId = localStorage.getItem('current_resume_id');
+  // useEffect(() => {
+  //   const loadCurrentResume = async () => {
+  //     const token = localStorage.getItem('token');
+  //     if (!token) return;
+  //     // First check if there's a specific resume_id in localStorage
+  //     const storedResumeId = currentResume?.id;
 
-      if (storedResumeId) {
-        try {
-          // Load the specific resume
-          const response = await api.get(`/resumes/${storedResumeId}`);
-          const resume = response.data;
-          setResumeText(resume.resume_text || '');
-          await setCurrentResumeId(resume.resume_id);
-          return;
-        } catch (err) {
-          console.log('Stored resume not found, loading latest', err);
-          localStorage.removeItem('current_resume_id');
-        }
-      }
 
-      // Fallback: load the most recent resume
-      try {
-        const response = await api.get('/resumes');
-        if (response.data && response.data.length > 0) {
-          const latestResume = response.data[response.data.length - 1];
-          setResumeText(latestResume.resume_text || '');
-          await setCurrentResumeId(latestResume.resume_id);
-        }
-      } catch (err) {
-        console.log('No resumes found or not logged in', err);
-      }
-    };
+  //     if (storedResumeId) {
+  //       try {
+  //         // Load the specific resume
+  //         // const response = await api.get(`/resumes/${storedResumeId}`);
+  //         // const resume = response.data;
+  //         // setResumeText(resume.resume_text || '');
+  //         await setCurrentResumeId(storedResumeId);
+  //         return;
+  //       } catch (err) {
+  //         console.log('Stored resume not found, loading latest', err);
+  //         localStorage.removeItem('current_resume_id');
+  //       }
+  //     }
 
-    loadCurrentResume();
-  }, []);
+  //     // If no resume selected then load the new chat
+
+  //   };
+
+  //   loadCurrentResume();
+  // }, []);
 
   const uploadFile = async (file: File) => {
     setIsUploading(true);

@@ -48,11 +48,11 @@ function AppContent() {
     <ResumeProvider>
       <div>
         <Navigation />
-        <div className="flex">
+        <div className="flex h-166">
           <section>
             <Sidebar />
           </section>
-          <main className="w-full">
+          <main className="w-full overflow-auto">
             <Routes>
               <Route path="/" element={<LandingPage />} />
               <Route path="/agent" element={<Agent />} />
