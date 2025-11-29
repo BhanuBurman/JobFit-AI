@@ -1,4 +1,6 @@
 from fastapi import APIRouter
+
+from app.api.v1.endpoints import chatbot
 from .endpoints import health, query, users, search, resume_review, upload, text_extractor, resume, learning_plan
 
 api_router = APIRouter()
@@ -13,3 +15,4 @@ api_router.include_router(upload.router, tags=["upload"])
 api_router.include_router(text_extractor.router, tags=["extraction"])
 api_router.include_router(resume.router, tags=["resume-management"])
 api_router.include_router(learning_plan.router, tags=["learning-plan"])
+api_router.include_router(chatbot.router, tags=["chatbot"])
