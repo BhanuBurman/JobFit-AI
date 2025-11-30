@@ -42,14 +42,14 @@ async def query(
     
 @router.get("/chat/history/{thread_id}", response_model=list[dict])
 async def get_chat_history(
-    thread_id: str,
+    thread_id: int,
     current_user: User = Depends(get_current_user)
 ) -> list[dict]:
     """Retrieve chat history for a given thread."""
     try:
         user_id = current_user.id
         # The service now returns a list of dicts: [{'role': 'human', ...}, ...]
-        messages = await service.get_chat_history(user_id, thread_id)
+        messages = await service.get_chat_history(user_id, str(thread_id))
         
         # FIX 2: Return messages directly. Do NOT call .dict()
         return messages 

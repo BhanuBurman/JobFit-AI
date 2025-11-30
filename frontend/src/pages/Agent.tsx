@@ -2,8 +2,11 @@ import React, { useState, useRef, useEffect } from "react";
 import { Send } from "lucide-react"; // Added Send icon
 import { useResume } from "../context/ResumeContext";
 import ResumeUploader from "../components/ResumeUploader";
+import { getChatMessages, type Message } from "../lib/api";
 
 export function Agent() {
+  const [messages, setMessages] = useState<Message[]>([]);
+
   const { currentResume } = useResume();
   const [input, setInput] = useState("");
   const textareaRef = useRef(null);
@@ -51,6 +54,20 @@ export function Agent() {
     }
   }, [input]);
 
+
+
+  useEffect(() => {
+    if(!currentResume) return;
+    getChatMessages(currentResume.id)
+    .then((msgs) => {
+      console.log(msgs);
+      
+      if(msgs) setMessages(msgs);
+    }).catch((error) => {
+      console.error("Error loading chat messages:", error);
+    });
+  }, [currentResume]);
+
   return (
     <div className="h-full w-full bg-slate-50 flex flex-col relative">
       {currentResume?.id ? (
@@ -60,20 +77,21 @@ export function Agent() {
           <div className="flex-1 overflow-y-auto p-4 pb-32 scroll-smooth">
             <div className="max-w-3xl mx-auto space-y-6">
               
-              {/* Bot Message */}
-              <div className="flex items-start">
-                <div className="bg-blue-100 text-blue-900 rounded-2xl rounded-tl-none px-5 py-3 max-w-md shadow-sm">
-                  Hello! How can I help you with your career today?
+              {messages.map((msg, index) =>{
+                return msg.role === "ai"? 
+                <div className="flex items-start" key={index}>
+                  <div className="bg-blue-100 text-blue-900 rounded-2xl rounded-tl-none px-5 py-3 max-w-md shadow-sm">
+                    {msg.content}
+                  </div>
                 </div>
-              </div>
-
-              {/* User Message */}
-              <div className="flex items-end justify-end">
+                :(
+              <div className="flex items-end justify-end" key={index}>
                 <div className="bg-white border border-gray-200 text-gray-900 rounded-2xl rounded-tr-none px-5 py-3 max-w-md shadow-sm">
-                  I want to improve my resume.
+                  {msg.content}
                 </div>
               </div>
-
+                )
+              })}
             </div>
           </div>
 

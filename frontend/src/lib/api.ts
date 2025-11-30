@@ -232,3 +232,21 @@ export const jobfitAPI = {
 };
 
 export default api;
+
+
+
+// ******** Agent API Calls ***************
+export interface Message {
+  role: "human" | "ai";
+  content: string;
+}
+
+export const getChatMessages = (resumeId: number): Promise<Message[]> => {
+    return api.get(`/chat/history/${resumeId}`)
+    .then((response) => {
+      return response.data as Message[];
+    })
+    .catch(error => {
+      console.error("Error fetching chat messages:", error);
+    })
+}
